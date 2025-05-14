@@ -4,7 +4,9 @@ import unittest
 import os
 from tempfile import NamedTemporaryFile
 
-from quboin.utils import read_integers_from_file
+from dimod import SampleSet
+
+from quboin.utils import read_integers_from_file, find_valid_knapsack_solution
 
 
 class TestReadIntegersFromFile(unittest.TestCase):
@@ -57,6 +59,22 @@ class TestReadIntegersFromFile(unittest.TestCase):
     def test_nonexistent_file(self):
         with self.assertRaises(FileNotFoundError):
             read_integers_from_file("wrong_path.txt")
+
+
+class TestFindValidKnapsackSolution(unittest.TestCase):
+    """Test case for find_valid_knapsack_solution."""
+    def test_find_valid_knapsack_solution(self):
+        weights = [2, 3]
+        profits = [5, 6]
+        capacity = 5
+        sampleset = SampleSet.from_samples(
+            [{0: 1, 1: 1}, {0: 1, 1: 0}], vartype="BINARY", energy=[-11, -5])
+
+        sample, weight, profit = find_valid_knapsack_solution(
+            sampleset, weights, profits, capacity)
+
+        self.assertEqual(weight, 5)
+        self.assertEqual(profit, 11)
 
 
 if __name__ == "__main__":

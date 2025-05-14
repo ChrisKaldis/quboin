@@ -2,9 +2,12 @@
 
 Includes helper functions to:
 -Read integer input files,
+-Finds the best valid solution of knapsack,
 """
 
 import os
+
+from dimod import SampleSet
 
 
 def read_integers_from_file(filename: str) -> list[int]:
@@ -40,3 +43,45 @@ def read_integers_from_file(filename: str) -> list[int]:
                     ) from exc
 
     return integers
+
+
+def find_valid_knapsack_solution(
+        samples_set: SampleSet,
+        weights: list[int],
+        profits: list[int],
+        capacity: int,
+    ) -> tuple[SampleSet, int, int]:
+    """Search in a `SampleSet` for the first valid knapsack solution.
+
+    A `dimod.SampleSet` from a sampler contains samples with "good" 
+    solutions. It is necessary to check if some samples don't satisfy
+    the capacity penalty and find the best one if there is one.
+
+    Args:
+        samples_set: `SampleSet` containing binary solutions.
+        weights: List with the weight of each object.
+        profits: List with the profit of each object.
+        capacity: Capacity of knapsack.
+
+    Returns:
+        A tuple with the first valid solution found together with
+        its weight and profit.
+    """
+    n = len(weights)
+    for sample in samples_set.data():
+        weight = 0
+        profit = 0
+
+        for key, val in sample[0].items():
+            # in case of encoding with aux bits,
+            # stop counting when items end.
+            if key == n:
+                break
+            if val:
+                weight += weights[key]
+                profit += profits[key]
+
+        # if current weight doesn't exceed the
+        # capacity penalty return the solution.
+        if weight <= capacity:
+            return sample, weight, profit

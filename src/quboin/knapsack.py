@@ -7,7 +7,6 @@ representation of the knapsack problem.
 - Construct a QUBO representation of the problem with auxiliary bits.
 """
 
-
 from math import log2
 
 from quboin.utils import read_integers_from_file
@@ -138,10 +137,10 @@ def build_knapsack_qubo_aux(
     Args:
         weights: List with the weight of each item.
         profits: List with the profit of each item. 
-        capacity: Knapsack capacity.
+        capacity: Capacity of knapsack.
         alpha: Positive constant in front of Ha term.
         beta: Positive constant in front of Hb term.
-    
+
     Returns:
         A dictionary representing the QUBO matrix like the 
         `build_knapsack_qubo` function but with additional
@@ -181,6 +180,6 @@ def build_knapsack_qubo_aux(
 
         qubo[(i + n, n + m)] = alpha * (2 ** (i + 1)) * remainder
 
-    qubo[(n + m, n + m)] = alpha * remainder**2
+    qubo[(n + m, n + m)] = alpha * remainder ** 2
 
     return qubo

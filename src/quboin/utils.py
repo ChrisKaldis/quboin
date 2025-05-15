@@ -6,12 +6,13 @@ Includes helper functions to:
 """
 
 import os
+from networkx import Graph
 
 from dimod import SampleSet
 
 
 def read_integers_from_file(filename: str) -> list[int]:
-    """Reads integers from a text file where each line contains one integer.
+    """Read integers from a text file where each line contains one integer.
 
     This function is used in order to read the data used in knapsack example.
 
@@ -85,3 +86,41 @@ def find_valid_knapsack_solution(
         # capacity penalty return the solution.
         if weight <= capacity:
             return sample, weight, profit
+
+
+def read_dimacs_graph(filename: str) -> Graph:
+    """Read a graph from a DIMACS file.
+
+    Args:
+        filename: Path to the DIMACS-formatted file.
+
+    Returns:
+        A Networkx graph created by the edge list in the file.
+
+    Raises:
+        FileNotFoundError: If the file doesn't exist.
+        ValueError: If an edge line is not formatted properly.
+    """
+    if not os.path.exists(filename):
+        raise FileNotFoundError(f"The file '{filename}' was not found.")
+
+    G = Graph()
+    with open(filename, "r", encoding="utf-8") as file:
+        for line in file:
+            # check if this line is empty or a comment.
+            if not line or line.startswith("c"):
+                # Skip comments and empty lines.
+                continue
+
+            parts = line.split()
+            # check if this line is refered to graph's edge.
+            if parts[0] == "e":
+                if len(parts) != 3:
+                    raise ValueError(f"Malformed edge line: '{line}'")
+                try:
+                    u, v = map(int, parts[1:3])
+                    G.add_edge(u, v)
+                except ValueError as e:
+                    raise ValueError(f"Invalid edge endpoints in line: '{line}'") from e
+
+    return G

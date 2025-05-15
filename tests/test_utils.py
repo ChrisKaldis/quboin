@@ -3,11 +3,12 @@
 import unittest
 import os
 from tempfile import NamedTemporaryFile
+from networkx import Graph, is_isomorphic
 
 from dimod import SampleSet
 
 from quboin.utils import read_integers_from_file, find_valid_knapsack_solution
-
+from quboin.utils import read_dimacs_graph
 
 class TestReadIntegersFromFile(unittest.TestCase):
     """Test cases for the read_integers_from_file function."""
@@ -75,6 +76,47 @@ class TestFindValidKnapsackSolution(unittest.TestCase):
 
         self.assertEqual(weight, 5)
         self.assertEqual(profit, 11)
+
+
+class TestReadDimacsGraph(unittest.TestCase):
+    def setUp(self):
+        # Create a valid DIMACS graph file
+        self.valid_graph_data = "\n".join([
+            "c Sample DIMACS file",
+            "p edge 4 3",
+            "e 1 2",
+            "e 2 3",
+            "e 3 4"
+        ])
+        self.temp_file = NamedTemporaryFile(delete=False, mode="w+", suffix=".txt")
+        self.temp_file.write(self.valid_graph_data)
+        self.temp_file.close()
+
+    def tearDown(self):
+        os.unlink(self.temp_file.name)
+
+    def test_valid_graph(self):
+        G = read_dimacs_graph(self.temp_file.name)
+
+        expected = Graph()
+        expected.add_edges_from([(1, 2), (2, 3), (3, 4)])
+
+        self.assertTrue(is_isomorphic(G, expected), "The parsed graph does not match the expected structure.")
+
+    def test_file_not_found(self):
+        with self.assertRaises(FileNotFoundError):
+            read_dimacs_graph("nonexistent_file.txt")
+
+    def test_invalid_edge_line(self):
+        invalid_data = "e 1\n"
+        with NamedTemporaryFile(delete=False, mode="w+", suffix=".txt") as temp_file:
+            temp_file.write(invalid_data)
+            temp_file_path = temp_file.name
+
+        with self.assertRaises(ValueError):
+            read_dimacs_graph(temp_file_path)
+
+        os.unlink(temp_file_path)
 
 
 if __name__ == "__main__":

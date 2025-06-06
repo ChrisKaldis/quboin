@@ -1,14 +1,56 @@
 """Basic utility functions for the quboin package.
 
 Includes helper functions to:
--Read integer input files,
+-Plots a colored graph.
+-Read input files eith integers,
 -Finds the best valid solution of knapsack,
+-Read graph from DIMACS file.
 """
 
 import os
-from networkx import Graph
+import matplotlib
+import matplotlib.pyplot as plt
+
+from networkx import Graph, draw
 
 from dimod import SampleSet
+
+
+def plot_graph_coloring(
+        graph: Graph,
+        position: dict,
+        coloring: list[tuple[int, int]],
+        fig_size: list[int, int] = (5, 5),
+        node_size: int=500,
+        font_size: int=11,
+        edge_color: str="gray",
+        ) -> None:
+    """Saves an image with a graph with colored nodes.
+
+    Args:
+        graph: A `networkx` undirected graph.
+        position: Position of each node in the plot. 
+        coloring: list of (node_idx, assigned_color) pairs.
+        node_size: size of nodes at plot.
+        font_size: fontsize at plot.
+        edge_color: color of edges at plot.
+    """
+    idx_to_node = {i: node for i, node in enumerate(sorted(graph.nodes()))}
+    node_to_colors = {idx_to_node[i]: color for i, color in coloring}
+    node_color_values = [node_to_colors[node] for node in graph.nodes()]
+    matplotlib.use("agg") # Use non-GUI backend
+    plt.figure(figsize=(fig_size[0], fig_size[1]))
+    draw(
+        graph,
+        with_labels=True,
+        pos=position,
+        node_color=node_color_values,
+        node_size=node_size,
+        font_size=font_size,
+        edge_color=edge_color
+    )
+    plt.savefig("graph_plot.png")
+    plt.close()
 
 
 def read_integers_from_file(filename: str) -> list[int]:
@@ -89,13 +131,16 @@ def find_valid_knapsack_solution(
 
 
 def read_dimacs_graph(filename: str) -> Graph:
-    """Read a graph from a DIMACS file.
+    """Read an undirected graph from a DIMACS file.
+
+    A line in the file that starts with the letter c is a comment.
+    Lines that start with e describe an edge of the graph.
 
     Args:
         filename: Path to the DIMACS-formatted file.
 
     Returns:
-        A Networkx graph created by the edge list in the file.
+        A `networkx` undirected graph created by the edge list of file.
 
     Raises:
         FileNotFoundError: If the file doesn't exist.
@@ -104,7 +149,7 @@ def read_dimacs_graph(filename: str) -> Graph:
     if not os.path.exists(filename):
         raise FileNotFoundError(f"The file '{filename}' was not found.")
 
-    G = Graph()
+    graph = Graph()
     with open(filename, "r", encoding="utf-8") as file:
         for line in file:
             # check if this line is empty or a comment.
@@ -119,8 +164,8 @@ def read_dimacs_graph(filename: str) -> Graph:
                     raise ValueError(f"Malformed edge line: '{line}'")
                 try:
                     u, v = map(int, parts[1:3])
-                    G.add_edge(u, v)
+                    graph.add_edge(u, v)
                 except ValueError as e:
                     raise ValueError(f"Invalid edge endpoints in line: '{line}'") from e
 
-    return G
+    return graph

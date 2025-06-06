@@ -1,0 +1,7 @@
+dwave-ocean-sdk
+dwave-neal
+networkx
+matplotlib
+pylint
+black
+pytest

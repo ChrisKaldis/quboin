@@ -1,81 +1,81 @@
+# Copyright 2025 Christos Kaldis
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Small example of 0/1 Knapsack problem using quboin.
+
+This is a very simple example that shows the better solution of the
+knapsack problem with aux variables. The case is that the best solution
+is not near the capacity of the knapsack but instead quite smaller.
 """
-An example how to use quboin in order to create and solve a 0/1 Knapsack problem.
 
-With a large amount of samples (e.g. 1000) it can find the optimal solution
-for the first 6 datasets.
+from argparse import ArgumentParser
 
-Data:
-https://people.sc.fsu.edu/~jburkardt/datasets/knapsack_01/knapsack_01.html
-"""
-
-from pathlib import Path
-from dwave.samplers import PathIntegralAnnealingSampler
 from dimod import BinaryQuadraticModel
+from dwave.samplers import SimulatedAnnealingSampler
 
-from quboin.knapsack import load_knapsack_data, build_knapsack_qubo
-from quboin.utils import read_integers_from_file, find_valid_knapsack_solution
-
-
-def get_files(capacity_file, weights_file, profits_file, solution_file):
-    """Data path of files."""
-    current_dir = Path(__file__).parent
-    data_dir = current_dir.parent / "datasets" / "knapsack"
-    capacity_path = data_dir / capacity_file
-    weights_path = data_dir / weights_file
-    profits_path = data_dir / profits_file
-    solution_path = data_dir / solution_file
-
-    return capacity_path, weights_path, profits_path, solution_path
+from quboin.knapsack import build_knapsack_with_aux, build_knapsack
 
 
-def solve_qubo(qubo, samples):
-    """Sampling a given qubo."""
-    sampler = PathIntegralAnnealingSampler()
-    knapsack_bqm = BinaryQuadraticModel.from_qubo(qubo)
-    samples = sampler.sample(knapsack_bqm, num_reads=samples)
+def parse_arguments():
+    # Set up argument parser.
+    parser = ArgumentParser(
+        description = "Argument for the Knapsack problem."
+    )
+    parser.add_argument(
+        "--aux",
+        "-aux",
+        type=int,
+        default=1,
+        help=(
+            "There are two formulation, the one with auxiliary bits,"
+            " and one that is simplified."
+        )
+    )
 
-    return samples.aggregate()
-
-
-def optimal(solution, solution_file):
-    """Check if the solution is the best."""
-    optimal_solution = read_integers_from_file(solution_file)
-    n = len(optimal_solution)
-    for key, val in solution.items():
-        if key == n:
-            break
-        if val != optimal_solution[key]:
-            return False
-
-    return True
+    return parser.parse_args()
 
 
-def solve_problem():
-    """A simple way to solve knapsack problem using quboin."""
-    # get the path of the data.
-    c_file, w_file, p_file, s_file = get_files(
-        "p06_c.txt", "p06_w.txt", "p06_p.txt", "p06_s.txt")
-    # get the lists with the data.
-    c, w, p = load_knapsack_data(c_file, w_file, p_file)
-    # create QUBO formulation.
-    k_qubo = build_knapsack_qubo(w, p, c)
-    # use a sampler.
-    samples = solve_qubo(k_qubo, 1000)
-    # find the valid solution with the smallest energy.
-    solution, weight, profit = find_valid_knapsack_solution(
-        samples, w, p, c)
-    # check if there is a valid one and if it is the best.
-    if solution is None:
-        print("No valid solution found")
-        return
-    elif optimal(solution[0], s_file):
-        print("The solution is optimal.")
-    # show the sample that is found with its data.
-    print(f"{solution}, with weight:{weight} and profit:{profit}")
+def get_problem_data():
+    weights = [12, 1, 1, 2, 4]
+    profits = [4, 2, 1, 2, 10]
+    # p/w = [0.3, 2, 1, 1, 2.5], pick up oder -> 4, 2, 3, 1, 0  
+    capacity = 15
+
+    return weights, profits, capacity
+
+
+def select_qubo(auxilliary, weights, profits, capacity):
+    if auxilliary == 1:
+        qubo = build_knapsack_with_aux(
+            weights, profits, capacity, max(profits)
+        )
+    else:
+        qubo = build_knapsack(
+            weights, profits, capacity, max(profits), 1
+        )
+
+    return qubo
 
 
 def main():
-    solve_problem()
+    args = parse_arguments()
+    w, p, c = get_problem_data()
+    qubo = select_qubo(args.aux, w, p, c)
+    bqm = BinaryQuadraticModel.from_qubo(qubo)
+    sampler = SimulatedAnnealingSampler()
+    samples = sampler.sample(bqm, num_reads=100)
+    print(samples.aggregate())
 
 
 if __name__ == "__main__":

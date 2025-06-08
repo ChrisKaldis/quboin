@@ -2,8 +2,7 @@
 
 This module includes functions to:
 - Load knapsack problem data from file inputs.
-- Construct a QUBO (Quadratic Unconstrained Binary Optimization)
-representation of the knapsack problem.
+- Construct a QUBO representation of the knapsack problem.
 - Construct a QUBO representation of the problem with auxiliary bits.
 """
 
@@ -79,57 +78,56 @@ def load_knapsack_data(
     return capacity, weights, profits
 
 
-def build_knapsack_qubo(
+def build_knapsack(
     weights: list[int],
     profits: list[int],
     capacity: int,
-    alpha: int = 1,
-    beta: int = 1,
+    alpha: int,
+    beta: int,
 ) -> dict[tuple[int, int], int]:
-    """Forms knapsack problem as QUBO.
+    """Knapsack problem as a simplified QUBO.
 
     It's the simple case without auxiliary bits. Generally alpha
     should be greater or equal to max(profit) * beta in order to
     avoid weakly violated our constraint but every alpha >= beta
-    is a good first assumption.
+    is a good first assumption. The constraint that we use is
+    actually from the subset sum problem, as a result we have good
+    results only when the optimal solution is near the capacity.
 
     Args:
         weights: List with the weight of each object.
         profits: List with the profit of each object.
         capacity: Capacity of knapsack.
-        alpha: Positive constant in front of Ha term. 
-        beta: Positive constant in front of Hb term.
+        alpha: Penalty coefficient for the constraint.
+        beta: Coefficient of optimization term.
 
     Returns:
         A dictionary representing the QUBO matrix, where keys 
         are index pairs and values are the corresponding coefficients. 
     """
-    qubo = dict()
+    qubo: dict[tuple[int, int], int] = {}
 
     n = len(weights)
     for i in range(n):
-        # Diagonal terms
         qubo[(i, i)] = (
             - beta * profits[i]
             + alpha * weights[i] ** 2
             - 2 * alpha * capacity * weights[i]
         )
         for j in range(i+1, n):
-            # Off-diagonal terms
             qubo[(i, j)] = 2 * alpha * weights[i] * weights[j]
 
     return qubo
 
 
-def build_knapsack_qubo_aux(
+def build_knapsack_with_aux(
         weights: list[int],
         profits: list[int],
         capacity: int,
         alpha: int = 1,
         beta: int = 1,
 ) -> dict[tuple[int, int], int]:
-    """
-    Constructs QUBO matrix for knapsack problem using auxiliary bits.
+    """Constructs QUBO matrix for knapsack problem using auxiliary bits.
 
     Uses a binary encoding of the knapsack capacity constraint via 
     auxiliary bits.
@@ -138,15 +136,15 @@ def build_knapsack_qubo_aux(
         weights: List with the weight of each item.
         profits: List with the profit of each item. 
         capacity: Capacity of knapsack.
-        alpha: Positive constant in front of Ha term.
-        beta: Positive constant in front of Hb term.
+        alpha: Penalty coefficient for the constraint.
+        beta: Coefficient of optimization term.
 
     Returns:
         A dictionary representing the QUBO matrix like the 
         `build_knapsack_qubo` function but with additional
         auxiliary bits.
     """
-    qubo = dict()
+    qubo: dict[tuple[int, int], int] = {}
     n = len(weights)
 
     # Number of auxiliary bits

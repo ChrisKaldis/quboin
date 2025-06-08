@@ -1,4 +1,4 @@
-"""Unit tests for the knapsack module in the quboin package."""
+"""Unit tests for the knapsack problem."""
 
 import unittest
 
@@ -14,11 +14,12 @@ import quboin.knapsack as kp
 
 class TestLoadKnapsackData(unittest.TestCase):
     """Test suite for loading knapsack data from files."""
+
     def setUp(self):
         """Set up file paths for valid knapsack dataset inputs."""
         self.test_dir = Path(__file__).parent.resolve()
         self.dataset_dir = self.test_dir.parent / "datasets" / "knapsack"
-        
+
         self.valid_capacity = self.dataset_dir / "p01_c.txt"
         self.valid_weights = self.dataset_dir / "p01_w.txt"
         self.valid_profits = self.dataset_dir / "p01_p.txt"
@@ -41,7 +42,7 @@ class TestLoadKnapsackData(unittest.TestCase):
         )
 
     def _test_with_empty_file(self, file_to_empty, expected_error):
-        """Helper for testing error raised when input files are empty."""
+        """Helper for testing error raised when one of the input files is empty."""
         with NamedTemporaryFile(mode="w+", delete=False) as empty_file:
             pass
 
@@ -144,18 +145,18 @@ class TestLoadKnapsackData(unittest.TestCase):
 class TestBuildKnapsackQubo(unittest.TestCase):
     """Test standard QUBO construction for the knapsack problem."""
     def setUp(self):
-        self.weights = [2, 3, 4]
-        self.profits = [5, 6, 7]
-        self.capacity = 5
+        self.weights = [12, 1, 1, 2, 4]
+        self.profits = [4, 2, 1, 2, 10]
+        self.capacity = 15
 
     def test_qubo(self):
         """Test that the constructed QUBO matches expected BQM structure."""
-        actual_qubo = kp.build_knapsack_qubo(self.weights, self.profits, self.capacity)
+        actual_qubo = kp.build_knapsack(self.weights, self.profits, self.capacity)
         actual_bqm = BinaryQuadraticModel.from_qubo(actual_qubo)
 
         expected_linear_terms = dict()
         expected_quadratic_terms = dict()
-        
+
         n = len(self.weights)
         for i in range(n):
             expected_term = (
@@ -182,13 +183,13 @@ class TestBuildKnapsackQuboAux(unittest.TestCase):
 
     def test_qubo(self):
         """Test structure of the auxiliary-variable QUBO."""
-        actual_qubo = kp.build_knapsack_qubo_aux(
+        actual_qubo = kp.build_knapsack_with_aux(
             self.weights, self.profits, self.capacity)
         actual_bqm = BinaryQuadraticModel.from_qubo(actual_qubo)
 
         expected_linear_terms = dict()
         expected_quadratic_terms = dict()
-        
+
         n = len(self.weights)
         m = int(log2(self.capacity))
         for i in range(n):
@@ -198,7 +199,7 @@ class TestBuildKnapsackQuboAux(unittest.TestCase):
             for j in range(i+1, n):
                 expected_term = 2 * self.weights[i] * self.weights[j]
                 expected_quadratic_terms.update({(j, i): expected_term})
-            
+
             for k in range(m):
                 expected_term = -2 * self.weights[i] * 2**k
                 expected_quadratic_terms.update({(k+n, i): expected_term})
@@ -213,10 +214,10 @@ class TestBuildKnapsackQuboAux(unittest.TestCase):
             for j in range(i+1, m):
                     expected_term = 2 ** (i + j + 1)
                     expected_quadratic_terms.update({(j+n, i+n): expected_term})
-            
+
             expected_term = (self.capacity + 1 - 2**m) * 2 ** (i+1)
             expected_quadratic_terms.update({(n+m, i+n): expected_term})
-        
+
         expected_term = (self.capacity + 1 - 2**m) ** 2
         expected_linear_terms.update({n+m: expected_term})
 

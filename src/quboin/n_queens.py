@@ -1,4 +1,7 @@
 """QUBO formulation for the N-Queen problem.
+
+This module provides a function to construct a QUBO model in order to find
+how to put N queens in N*N board in a way that no queen attack the others.
 """
 
 from networkx import Graph
@@ -13,7 +16,7 @@ def build_n_queen(
 
     This model contains two constraints. The first one applies
     a penalty when it is selected more than n queens on the board. 
-    The second one applies a penalty when two nodes re selected
+    The second one applies a penalty when two nodes are selected
     that are connected through an edge. 
 
     Args:

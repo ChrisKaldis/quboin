@@ -1,8 +1,8 @@
-"""Basic utility functions for the quboin package.
+"""Basic functions for the quboin package.
 
 Includes helper functions to:
 -Plots a colored graph.
--Read input files eith integers,
+-Read input files with integers,
 -Finds the best valid solution of knapsack,
 -Read graph from DIMACS file.
 """
@@ -149,8 +149,8 @@ def read_dimacs_graph(filename: str) -> Graph:
     if not os.path.exists(filename):
         raise FileNotFoundError(f"The file '{filename}' was not found.")
 
-    graph = Graph()
     with open(filename, "r", encoding="utf-8") as file:
+        graph = Graph()
         for line in file:
             # check if this line is empty or a comment.
             if not line or line.startswith("c"):

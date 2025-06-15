@@ -22,7 +22,7 @@ from argparse import ArgumentParser
 from networkx import Graph
 
 from dimod import BinaryQuadraticModel
-from neal import SimulatedAnnealingSampler
+from dwave.samplers import SimulatedAnnealingSampler
 
 from quboin.graph_coloring import build_graph_coloring
 from quboin.utils import plot_graph_coloring

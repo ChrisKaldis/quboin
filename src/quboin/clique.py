@@ -13,7 +13,7 @@ def build_clique_k(
         alpha: int = 1,
         beta: int = 1,
     ) -> dict[tuple[int, int], int]:
-    """Construct a QUBO for solving the k-clique problem in a graph.
+    """Constructs a QUBO for solving the k-clique problem in a graph.
 
     The function formulates a QUBO (Quadratic Unconstrained Binary Optimization)
     to determine whether there exists a clique of size `k` in the given graph.
@@ -36,14 +36,14 @@ def build_clique_k(
     """
     qubo: dict[tuple[int, int], int] = {}
     node_to_index = {node: i for i, node in enumerate(sorted(graph.nodes()))}
-    n = graph.number_of_nodes()
+    node_number = graph.number_of_nodes()
 
     # Size constraint penalty,
     # in case the selected nodes aren't size `k`.
-    for i in range(n):
+    for i in range(node_number):
         # linear term
         qubo[(i, i)] = alpha * (1 - 2*k)
-        for j in range(i+1, n):
+        for j in range(i+1, node_number):
             # quadratic term
             qubo[(i, j)] = 2 * alpha
 

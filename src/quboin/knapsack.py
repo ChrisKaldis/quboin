@@ -29,7 +29,7 @@ def load_knapsack_data(
     Raises:
         ValueError: For various validation errors with clear priorities:
             1. If any of the files don't contain any number (are empty).
-            2. If weights and profits have different length
+            2. If weights and profits have different length.
             3. If any weight is non-possitive.
             4. If capacity is negative.
             5. If capacity is smaller than the smallest of weights.

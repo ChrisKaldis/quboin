@@ -1,4 +1,4 @@
-"""Unit tests for the read_integers_from_file utility function."""
+"""Unit tests for the utils."""
 
 import unittest
 import os
@@ -7,9 +7,9 @@ from networkx import Graph, is_isomorphic
 
 from dimod import SampleSet
 
-from quboin.utils import read_integers_from_file, find_valid_knapsack_solution
-from quboin.utils import read_dimacs_graph
-
+from quboin.utils import (
+    read_integers_from_file, find_valid_knapsack_solution, read_dimacs_graph
+)
 class TestReadIntegersFromFile(unittest.TestCase):
     """Test cases for the read_integers_from_file function."""
     

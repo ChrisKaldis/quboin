@@ -36,7 +36,7 @@ def parse_arguments():
         "--aux",
         "-aux",
         type=int,
-        default=1,
+        default=0,
         help=(
             "There are two formulation, the one with auxiliary bits,"
             " and one that is simplified."
@@ -58,11 +58,11 @@ def get_problem_data():
 def select_qubo(auxilliary, weights, profits, capacity):
     if auxilliary == 1:
         qubo = build_knapsack_with_aux(
-            weights, profits, capacity, max(profits)
+            weights, profits, capacity, max(profits)+1, 1
         )
     else:
         qubo = build_knapsack(
-            weights, profits, capacity, max(profits), 1
+            weights, profits, capacity, max(profits)+1, 1
         )
 
     return qubo
@@ -74,7 +74,7 @@ def main():
     qubo = select_qubo(args.aux, w, p, c)
     bqm = BinaryQuadraticModel.from_qubo(qubo)
     sampler = SimulatedAnnealingSampler()
-    samples = sampler.sample(bqm, num_reads=100)
+    samples = sampler.sample(bqm, num_reads=1000)
     print(samples.aggregate())
 
 

@@ -77,7 +77,7 @@ def create_qubo(aux, weights, profits, cap):
         qubo = build_knapsack_with_aux(weights, profits, cap, a, b)
         offset = cap
     else:
-        a = max(profits)
+        a = max(profits)+1
         qubo = build_knapsack(weights, profits, cap, a, 1)
         offset = a*cap**2
 

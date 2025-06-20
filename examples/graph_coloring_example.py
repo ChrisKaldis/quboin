@@ -38,7 +38,7 @@ def parse_arguments():
         "-n",
         type=str,
         default="-1",
-        choices=["-1", "0", "1", "2", "3", "4"],
+        choices=["-1", "0", "1", "2", "3"],
         help=(
             "Select which of the 4 nodes of the graph "
             "you want to give a certain color."

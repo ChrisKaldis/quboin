@@ -18,6 +18,8 @@ User can decide the color of one node. This is useful in order to
 understand how the implementation of sudoku works.
 """
 
+import logging
+
 from argparse import ArgumentParser
 from networkx import Graph
 
@@ -29,7 +31,6 @@ from quboin.utils import plot_graph_coloring
 
 
 def parse_arguments():
-    # Set up argument parser.
     parser = ArgumentParser(
         description = "Arguments for building min vertex cover problem."
     )
@@ -51,7 +52,7 @@ def parse_arguments():
         default="0",
         choices=["0", "1", "2"],
         help=(
-            "you can select between 3 colors."
+            "Select between 3 colors [R, G, B]."
         )
     )
 
@@ -105,14 +106,25 @@ def find_colors(solution, node, color):
 
 
 def main():
+    logging.basicConfig(
+        filename="graph_coloring.log",
+        filemode="w",
+        level=logging.INFO,
+        format="%(message)s"
+    )
+    logging.StreamHandler.terminator = ""
+    logger = logging.getLogger(__name__)
+
     args = parse_arguments()
     graph, pos = get_graph()
     qubo = build_graph_coloring(graph, 3)
     bqm = BinaryQuadraticModel.from_qubo(qubo, offset=graph.number_of_nodes())
     fix_variables(bqm, args.node, args.color)
+
     sampler = SimulatedAnnealingSampler()
     samples = sampler.sample(bqm, num_reads=100)
-    print(samples.aggregate())
+    logger.info("%s\n", samples.aggregate())
+
     node_colors = find_colors(samples, args.node, args.color)
     plot_graph_coloring(graph, pos, node_colors, node_size=1000)
 

@@ -15,6 +15,8 @@
 """Solving N-queens problem.
 """
 
+import logging
+
 from networkx import Graph
 
 from dimod import BinaryQuadraticModel
@@ -62,20 +64,33 @@ def calculate_valid_solutions(samples):
 
 
 def main():
+    logging.basicConfig(
+        filename="n_queens.log",
+        filemode="w",
+        level=logging.INFO,
+        format="%(message)s"
+    )
+    logging.StreamHandler.terminator = ""
+    logger = logging.getLogger(__name__)
+
     graph, pos = build_queens_graph(QUEENS)
     queen_qubo = build_n_queen(graph, QUEENS)
     queen_bqm = BinaryQuadraticModel.from_qubo(queen_qubo, offset=QUEENS**2)
     solver = SimulatedAnnealingSampler()
-    samples = solver.sample(queen_bqm, num_reads=300)
+    samples = solver.sample(queen_bqm, num_reads=500)
+    logger.info("%s\n", samples.aggregate())
 
     if samples.first.energy == 0.0:
         solution = samples.first
         pallete = ["#DAA765", "#834A00"]
         coloring = [(key, pallete[val]) for key, val in solution[0].items()]
         plot_graph_coloring(graph, pos, coloring, fig_size=(QUEENS+1,QUEENS+1))
-        print(calculate_valid_solutions(samples))
+        logger.info(
+            "Solutions that satisfy the constraints:%d\n",
+            calculate_valid_solutions(samples)
+        )
     else:
-        print("Didn't find any valid solution.")
+        logger.info("Didn't find any valid solution.\n")
 
 
 if __name__ == "__main__":

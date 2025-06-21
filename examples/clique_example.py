@@ -34,7 +34,6 @@ from quboin.utils import plot_graph_coloring
 
 
 def parse_arguments():
-    # Set up argument parser.
     parser = ArgumentParser(
         description = "Arguments for building k-clique problem."
     )
@@ -42,7 +41,7 @@ def parse_arguments():
         "--solver",
         "-s",
         type=str,
-        default="ts",
+        default="sa",
         choices=["sa", "es", "ts"],
         help=(
             "solver must be either sa (Simulated Annealing)"
@@ -53,7 +52,7 @@ def parse_arguments():
         "--graph",
         "-g",
         type=int,
-        default=1,
+        default=0,
         choices=[0, 1, 2],
         help=(
             "Choose type of graph, 0 for a simple graph,"
@@ -65,20 +64,23 @@ def parse_arguments():
         "-l",
         type=int,
         default=20,
-        help=("Number of cliques, used in caveman graph.")
+        help=(
+            "Number of cliques, used in caveman graph,"
+            "also the length between the two cliques of barbell."
+        )
     )
     parser.add_argument(
         "--k",
         "-k",
         type=int,
-        default=10,
+        default=3,
         help=("Size of clique.")
     )
     parser.add_argument(
         "--reads",
         "-r",
         type=int,
-        default=1000,
+        default=100,
         help=("Number of reads for the sampler.")
     )
 
@@ -86,8 +88,9 @@ def parse_arguments():
 
 
 def get_graph(graph_pick, lamda, k):
+    graph = Graph()
+    nodes_position = dict()
     if graph_pick == 0:
-        graph = Graph()
         graph.add_edges_from([
                 (1, 2), (1, 5),
                 (2, 3), (2, 5),
@@ -117,15 +120,15 @@ def solve_problem(solver, bqm, reads, logger):
     if solver == "sa":
         sampler = SimulatedAnnealingSampler()
         samples = sampler.sample(bqm, num_reads=reads)
-        logger.info("%s", samples.aggregate())
+        logger.info("%s\n", samples.aggregate())
     elif solver == "es":
         sampler = ExactSolver()
         samples = sampler.sample(bqm)
-        logger.info("%s", samples)
+        logger.info("%s\n", samples)
     elif solver == "ts":
         sampler = TabuSampler()
         samples = sampler.sample(bqm, num_reads=reads)
-        logger.info("%s", samples.aggregate())
+        logger.info("%s\n", samples.aggregate())
 
     return samples
 
@@ -138,7 +141,13 @@ def is_solution_zero(sampleset):
 
 
 def main():
-    logging.basicConfig(level = logging.INFO, format = "%(message)s")
+    logging.basicConfig(
+        filename="clique.log",
+        filemode="w",
+        level=logging.INFO,
+        format="%(message)s"
+    )
+    logging.StreamHandler.terminator = ""
     logger = logging.getLogger(__name__)
 
     args = parse_arguments()
@@ -156,9 +165,9 @@ def main():
         pallete = ["#ffa3a3", "#ff0000"]
         coloring = [(key, pallete[val]) for key, val in solution[0].items()]
         plot_graph_coloring(graph, pos, coloring, (2*args.k, 2*args.k))
-        logger.info("An image in graph_plot.png created.")
+        logger.info("Solution (sample with zero energy) was found.")
     else:
-        logger.info("Optimal solution wasn't found.")
+        logger.info("Solution wasn't found.")
 
 
 if __name__ == "__main__":

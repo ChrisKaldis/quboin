@@ -12,11 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
+"""Solve Min vertex cover problem for two small graphs.
+
+User can select between two algorithms, the brute force solution that
+calculates the energy of all possible states or simulated annealing. 
+A plot with the solution of graph is also presented.
 """
 
-import argparse
+import logging
 
+from argparse import ArgumentParser
 from networkx import Graph
 
 from dimod import BinaryQuadraticModel, ExactSolver
@@ -28,7 +33,7 @@ from quboin.utils import plot_graph_coloring
 
 def parse_arguments():
     # Set up argument parser.
-    parser = argparse.ArgumentParser(
+    parser = ArgumentParser(
         description = "Arguments for building min vertex cover problem."
     )
     parser.add_argument(
@@ -101,26 +106,44 @@ def get_second_graph():
     return graph, pos
 
 
-def main():
-    args = parse_arguments()
-    if args.graph == "1":
+def select_graph(graph_choice):
+    if graph_choice == "1":
         graph, pos = get_first_graph()
     else:
         graph, pos = get_second_graph()
 
-    o = 2 * graph.number_of_edges()
-    qubo = build_min_vertex_cover(graph)
-    bqm = BinaryQuadraticModel.from_qubo(qubo, offset=o)
+    return graph, pos
 
-    if args.solver == "sa":
+
+def solve_problem(solver_choice, bqm):
+    if solver_choice == "sa":
         solver = SimulatedAnnealingSampler()
         samples = solver.sample(bqm, num_reads=100)
-        print(samples.aggregate())
+        samples = samples.aggregate()
     else:
         solver = ExactSolver()
         samples = solver.sample(bqm)
-        print(samples)
 
+    return samples
+
+
+def main():
+    logging.basicConfig(
+        filename="vertex_cover.log",
+        filemode="w",
+        level=logging.INFO,
+        format="%(message)s"
+    )
+    logging.StreamHandler.terminator = ""
+    logger = logging.getLogger(__name__)
+
+    args = parse_arguments()
+    graph, pos = select_graph(args.graph)
+    o = 2 * graph.number_of_edges()
+    qubo = build_min_vertex_cover(graph)
+    bqm = BinaryQuadraticModel.from_qubo(qubo, offset=o)
+    samples = solve_problem(args.solver, bqm)
+    logger.info("%s",samples)
     solution = samples.first
     pallete = ["#ffa3a3", "#ff0000"]
     coloring = [(key, pallete[val]) for key, val in solution[0].items()]

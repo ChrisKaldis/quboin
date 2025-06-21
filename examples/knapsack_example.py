@@ -19,12 +19,15 @@ knapsack problem with aux variables. The case is that the best solution
 is not near the capacity of the knapsack but instead quite smaller.
 """
 
+import logging
+
 from argparse import ArgumentParser
 
 from dimod import BinaryQuadraticModel
 from dwave.samplers import SimulatedAnnealingSampler
 
 from quboin.knapsack import build_knapsack_with_aux, build_knapsack
+from quboin.utils import find_valid_knapsack_solution
 
 
 def parse_arguments():
@@ -36,7 +39,7 @@ def parse_arguments():
         "--aux",
         "-aux",
         type=int,
-        default=0,
+        default=1,
         help=(
             "There are two formulation, the one with auxiliary bits,"
             " and one that is simplified."
@@ -69,13 +72,27 @@ def select_qubo(auxilliary, weights, profits, capacity):
 
 
 def main():
+    logging.basicConfig(
+        filename="knapsack.log",
+        filemode="w",
+        level=logging.INFO,
+        format="%(message)s"
+    )
+    logging.StreamHandler.terminator = ""
+    logger = logging.getLogger(__name__)
+
     args = parse_arguments()
     w, p, c = get_problem_data()
     qubo = select_qubo(args.aux, w, p, c)
     bqm = BinaryQuadraticModel.from_qubo(qubo)
     sampler = SimulatedAnnealingSampler()
     samples = sampler.sample(bqm, num_reads=1000)
-    print(samples.aggregate())
+    logger.info("%s\n", samples.aggregate())
+
+    solution, weight, profit = find_valid_knapsack_solution(samples, w, p, c)
+    var = [int(val) for _, val in solution[0].items()]
+    logger.info("%s\n", var)
+    logger.info("With weight %d and profit %d\n", weight, profit)
 
 
 if __name__ == "__main__":

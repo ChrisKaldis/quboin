@@ -18,6 +18,8 @@ Data:
 https://people.sc.fsu.edu/~jburkardt/datasets/knapsack_01/knapsack_01.html
 """
 
+import logging
+
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -26,14 +28,13 @@ from dwave.samplers import SimulatedAnnealingSampler
 
 from quboin.knapsack import (
     load_knapsack_data, build_knapsack, build_knapsack_with_aux
-) 
+)
 from quboin.utils import (
     read_integers_from_file, find_valid_knapsack_solution
 )
 
 
 def parse_arguments():
-    # Set up argument parser.
     parser = ArgumentParser(
         description = "Argument for the Knapsack problem."
     )
@@ -73,8 +74,7 @@ def get_files(file):
 def create_qubo(aux, weights, profits, cap):
     if aux == 1:
         a = max(profits)+1
-        b = 1
-        qubo = build_knapsack_with_aux(weights, profits, cap, a, b)
+        qubo = build_knapsack_with_aux(weights, profits, cap, a, 1)
         offset = cap
     else:
         a = max(profits)+1
@@ -105,22 +105,31 @@ def optimal(solution, solution_file):
 
 
 def main():
+    logging.basicConfig(
+        filename="knapsack.log",
+        filemode="w",
+        level=logging.INFO,
+        format="%(message)s"
+    )
+    logging.StreamHandler.terminator = ""
+    logger = logging.getLogger(__name__)
+
     args = parse_arguments()
     c_file, w_file, p_file, s_file = get_files(args.filename)
     c, w, p = load_knapsack_data(c_file, w_file, p_file)
     knapsack_bqm = create_qubo(args.aux, w, p, c)
     samples = solve_qubo(knapsack_bqm, 1000)
-    print(samples.aggregate())
+    logger.info("%s\n", samples.aggregate())
 
     solution, s_w, s_p = find_valid_knapsack_solution(samples, w, p, c)
     if solution is None:
-        print("No valid solution found")
+        logger.info("No valid solution found.\n")
     elif optimal(solution[0], s_file):
-        print("The solution is optimal.")
+        logger.info("The solution is optimal.\n")
 
     var = [int(val) for _, val in solution[0].items()]
-    print(f"{var} with weight:{s_w} and profit:{s_p}\n"
-          f"{solution[2]} samples with {solution[1]} energy were found.")
+    logger.info("%s \nwith weight:%d and profit:%d\n", var, s_w, s_p)
+    logger.info("%d samples with %d energy were found.\n", solution[2], solution[1])
 
 
 if __name__ == "__main__":
